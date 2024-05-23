@@ -1,59 +1,58 @@
-<script>
-	import Counter from './Counter.svelte';
-	import welcome from '$lib/images/svelte-welcome.webp';
-	import welcome_fallback from '$lib/images/svelte-welcome.png';
+<script lang="ts">
+  import { onMount } from "svelte";
+
+  let video: HTMLVideoElement;
+  let canvas: HTMLCanvasElement;
+  let error: unknown = undefined;
+
+  onMount(async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: "user",
+          width: { ideal: 4096 },
+          height: { ideal: 2160 },
+        },
+      });
+      video.srcObject = stream;
+      await video.play();
+      video.height = video.videoHeight;
+      video.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      canvas.width = video.videoWidth;
+    } catch (e) {
+      console.log(e);
+      error = e;
+    }
+  });
+
+  function captureScreenshot() {
+    const ctx = canvas.getContext("2d");
+    ctx?.drawImage(video, 0, 0);
+  }
 </script>
 
 <svelte:head>
-	<title>Home</title>
-	<meta name="description" content="Svelte demo app" />
+  <title>Video capture test</title>
 </svelte:head>
 
-<section>
-	<h1>
-		<span class="welcome">
-			<picture>
-				<source srcset={welcome} type="image/webp" />
-				<img src={welcome_fallback} alt="Welcome" />
-			</picture>
-		</span>
-
-		to your new<br />SvelteKit app
-	</h1>
-
-	<h2>
-		try editing <strong>src/routes/+page.svelte</strong>
-	</h2>
-
-	<Counter />
-</section>
+<!-- svelte-ignore a11y-media-has-caption -->
+<video bind:this={video} />
+<p>
+  <button type="button" on:click={captureScreenshot}>Take screenshot</button>
+</p>
+{#if error != null}
+  <pre>
+	{JSON.stringify(error, undefined, 2)}
+</pre>
+{/if}
+<canvas bind:this={canvas} />
 
 <style>
-	section {
-		display: flex;
-		flex-direction: column;
-		justify-content: center;
-		align-items: center;
-		flex: 0.6;
-	}
-
-	h1 {
-		width: 100%;
-	}
-
-	.welcome {
-		display: block;
-		position: relative;
-		width: 100%;
-		height: 0;
-		padding: 0 0 calc(100% * 495 / 2048) 0;
-	}
-
-	.welcome img {
-		position: absolute;
-		width: 100%;
-		height: 100%;
-		top: 0;
-		display: block;
-	}
+  video {
+    display: none;
+  }
+  pre {
+    color: red;
+  }
 </style>
