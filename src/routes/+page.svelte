@@ -5,6 +5,9 @@
   let canvas: HTMLCanvasElement;
   let error: unknown = undefined;
 
+  let width: number | undefined;
+  let height: number | undefined;
+
   onMount(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -16,10 +19,8 @@
       });
       video.srcObject = stream;
       await video.play();
-      video.height = video.videoHeight;
-      video.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      canvas.width = video.videoWidth;
+      width = video.videoWidth;
+      height = video.videoHeight;
     } catch (e) {
       console.log(e);
       error = e;
@@ -37,16 +38,22 @@
 </svelte:head>
 
 <!-- svelte-ignore a11y-media-has-caption -->
-<video bind:this={video} />
+<video bind:this={video} {width} {height} />
 <p>
-  <button type="button" on:click={captureScreenshot}>Take screenshot</button>
+  {#if width || height}
+    <button type="button" on:click={captureScreenshot}>Take screenshot</button>
+    Video stream obtained, size == {width}&times;{height}
+  {:else}
+    Getting a video stream...
+  {/if}
 </p>
+
 {#if error != null}
   <pre>
 	{JSON.stringify(error, undefined, 2)}
 </pre>
 {/if}
-<canvas bind:this={canvas} />
+<canvas bind:this={canvas} {width} {height} />
 
 <style>
   video {
