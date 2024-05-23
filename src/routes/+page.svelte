@@ -1,32 +1,14 @@
 <script lang="ts">
-  let video: HTMLVideoElement;
+  import ErrorPanel from "$lib/components/ErrorPanel.svelte";
+  import MediaDeviceList from "$lib/components/MediaDeviceList.svelte";
+  import VideoStreamObtainer from "$lib/components/VideoStreamObtainer.svelte";
+
   let canvas: HTMLCanvasElement;
-  let error: unknown = undefined;
+  let video: HTMLVideoElement;
+  let error = $state<unknown>();
 
-  let videoStreamPending = false;
-  let width: number | undefined;
-  let height: number | undefined;
-
-  async function getVideoStream() {
-    videoStreamPending = true;
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-          width: { ideal: 4096 },
-          height: { ideal: 2160 },
-        },
-      });
-      video.srcObject = stream;
-      await video.play();
-      videoStreamPending = false;
-      width = video.videoWidth;
-      height = video.videoHeight;
-    } catch (e) {
-      console.log(e);
-      error = e;
-    }
-  }
+  let width = $state<number | undefined>();
+  let height = $state<number | undefined>();
 
   function captureScreenshot() {
     const ctx = canvas.getContext("2d");
@@ -38,33 +20,41 @@
   <title>Video capture test</title>
 </svelte:head>
 
-<!-- svelte-ignore a11y-media-has-caption -->
-<video bind:this={video} {width} {height} />
+<!-- svelte-ignore a11y_media_has_caption -->
+<video bind:this={video} {width} {height}></video>
+<VideoStreamObtainer
+  onstream={(stream) => {
+    video.srcObject = stream;
+    video
+      .play()
+      .then(() => {
+        width = video.videoWidth;
+        height = video.videoHeight;
+        error = undefined;
+      })
+      .catch((e) => {
+        width = undefined;
+        height = undefined;
+        error = e;
+      });
+  }}
+/>
 
-<p>
-  {#if width || height}
-    <button type="button" on:click={captureScreenshot}>Take a screenshot</button
-    >
-    Video stream obtained, size == {width}&times;{height}
-  {:else if !videoStreamPending}
-    <button type="button" on:click={getVideoStream}>Get a video stream</button>
-  {:else}
-    Getting a video stream...
-  {/if}
-</p>
-
-{#if error != null}
-  <pre>
-	{JSON.stringify(error, undefined, 2)}
-</pre>
+{#if width && height}
+  <p>
+    <button type="button" onclick={captureScreenshot}>
+      Capture a screenshot
+    </button>
+    Video stream's size: {width}&times;{height}
+  </p>
 {/if}
-<canvas bind:this={canvas} {width} {height} />
+<ErrorPanel {error} />
+<MediaDeviceList />
+
+<canvas bind:this={canvas} {width} {height}></canvas>
 
 <style>
   video {
     display: none;
-  }
-  pre {
-    color: red;
   }
 </style>
