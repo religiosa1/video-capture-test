@@ -1,14 +1,14 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-
   let video: HTMLVideoElement;
   let canvas: HTMLCanvasElement;
   let error: unknown = undefined;
 
+  let videoStreamPending = false;
   let width: number | undefined;
   let height: number | undefined;
 
-  onMount(async () => {
+  async function getVideoStream() {
+    videoStreamPending = true;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
@@ -19,13 +19,14 @@
       });
       video.srcObject = stream;
       await video.play();
+      videoStreamPending = false;
       width = video.videoWidth;
       height = video.videoHeight;
     } catch (e) {
       console.log(e);
       error = e;
     }
-  });
+  }
 
   function captureScreenshot() {
     const ctx = canvas.getContext("2d");
@@ -39,10 +40,14 @@
 
 <!-- svelte-ignore a11y-media-has-caption -->
 <video bind:this={video} {width} {height} />
+
 <p>
   {#if width || height}
-    <button type="button" on:click={captureScreenshot}>Take screenshot</button>
+    <button type="button" on:click={captureScreenshot}>Take a screenshot</button
+    >
     Video stream obtained, size == {width}&times;{height}
+  {:else if !videoStreamPending}
+    <button type="button" on:click={getVideoStream}>Get a video stream</button>
   {:else}
     Getting a video stream...
   {/if}
