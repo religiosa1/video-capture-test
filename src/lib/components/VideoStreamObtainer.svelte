@@ -37,7 +37,7 @@
         video: {
           facingMode: constraint(facingMode, facingModeSpecifier),
           width: { ideal: 4096 },
-          height: { ideal: 2160 },
+          height: { ideal: 4096 },
         },
       });
       onstream?.(stream);
